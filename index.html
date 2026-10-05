@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -74,17 +75,85 @@
         const fctx = floorCanvas.getContext('2d');
 
         /* =========================================================
+           SKINS DO PERSONAGEM
+        ========================================================= */
+        // Cada skin tem: nome, cor primária/secundária e fase pra desbloquear
+        const SKINS = [
+            { id: 0, name: 'RECRUTA', desc: 'Skin inicial', colorLight: '#7fe8ff', colorMid: '#44ddff', colorDark: '#1a88aa', core1: '#aaffff', core2: '#0088cc', core3: '#004466', accent: '#00aaff', unlockPhase: 0 },
+            { id: 1, name: 'SOLDADO', desc: 'Alcança a Fase 2', colorLight: '#a0ffa0', colorMid: '#44dd44', colorDark: '#1a661a', core1: '#ccffcc', core2: '#22aa22', core3: '#0a440a', accent: '#00ff44', unlockPhase: 2 },
+            { id: 2, name: 'CAÇADOR', desc: 'Alcança a Fase 3', colorLight: '#ffb070', colorMid: '#ff8844', colorDark: '#aa4411', core1: '#ffd0a0', core2: '#dd6622', core3: '#662200', accent: '#ff6600', unlockPhase: 3 },
+            { id: 3, name: 'ELITE', desc: 'Alcança a Fase 4', colorLight: '#c080ff', colorMid: '#a044ff', colorDark: '#551a99', core1: '#e0b0ff', core2: '#8822dd', core3: '#330066', accent: '#aa44ff', unlockPhase: 4 },
+            { id: 4, name: 'SOBREVIVENTE', desc: 'Alcança a Fase 5', colorLight: '#ffa0a0', colorMid: '#ff4444', colorDark: '#881a1a', core1: '#ffcccc', core2: '#cc2222', core3: '#550000', accent: '#ff2222', unlockPhase: 5 },
+            { id: 5, name: 'CYBER', desc: 'Alcança a Fase 6', colorLight: '#a0ffe0', colorMid: '#00ffcc', colorDark: '#008888', core1: '#c0ffff', core2: '#00ccaa', core3: '#005555', accent: '#00ffdd', unlockPhase: 6 },
+            { id: 6, name: 'ARTILHEIRO', desc: 'Alcança a Fase 7', colorLight: '#ffe070', colorMid: '#ffcc00', colorDark: '#aa8800', core1: '#fff0a0', core2: '#ddaa00', core3: '#554400', accent: '#ffdd00', unlockPhase: 7 },
+            { id: 7, name: 'MÁQUINA', desc: 'Alcança a Fase 8', colorLight: '#c0c0c0', colorMid: '#808080', colorDark: '#404040', core1: '#e0e0e0', core2: '#606060', core3: '#202020', accent: '#a0a0a0', unlockPhase: 8 },
+            { id: 8, name: 'FANTASMA', desc: 'Alcança a Fase 9', colorLight: '#e0e0ff', colorMid: '#8888ff', colorDark: '#3333aa', core1: '#ffffff', core2: '#6666ee', core3: '#111166', accent: '#8888ff', unlockPhase: 9 },
+            { id: 9, name: 'LENDÁRIO', desc: 'Complete todas as fases', colorLight: '#ff88ff', colorMid: '#ff00ff', colorDark: '#880088', core1: '#ffaaff', core2: '#cc00cc', core3: '#440044', accent: '#ff00ff', unlockPhase: 10 }
+        ];
+
+        const UNLOCKS_KEY = 'nightfall_unlocks_v1';
+        const SELECTED_SKIN_KEY = 'nightfall_skin_v1';
+
+        let maxPhaseReached = 1;
+        let selectedSkin = 0;
+        let skinsScroll = 0; // rolagem horizontal (não usado por enquanto)
+
+        function loadUnlocks() {
+            try {
+                const data = localStorage.getItem(UNLOCKS_KEY);
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (parsed && typeof parsed.maxPhase === 'number') {
+                        maxPhaseReached = parsed.maxPhase;
+                    }
+                }
+                const sel = localStorage.getItem(SELECTED_SKIN_KEY);
+                if (sel !== null) {
+                    selectedSkin = parseInt(sel) || 0;
+                }
+            } catch (e) { }
+        }
+
+        function saveUnlocks() {
+            try {
+                localStorage.setItem(UNLOCKS_KEY, JSON.stringify({ maxPhase: maxPhaseReached }));
+                localStorage.setItem(SELECTED_SKIN_KEY, selectedSkin.toString());
+            } catch (e) { }
+        }
+
+        function isSkinUnlocked(skin) {
+            return maxPhaseReached >= skin.unlockPhase;
+        }
+
+        function getCurrentSkin() {
+            return SKINS[selectedSkin] || SKINS[0];
+        }
+
+        function updateMaxPhase(phase) {
+            if (phase > maxPhaseReached) {
+                maxPhaseReached = phase;
+                saveUnlocks();
+            }
+        }
+
+        loadUnlocks();
+
+        /* =========================================================
            BOTÕES
         ========================================================= */
         const BUTTONS = {
             menu: [
-                { id: 'start', label: '▶  INICIAR', x: W / 2 - 170, y: 300, w: 340, h: 54, color: '#a855f7' },
-                { id: 'records', label: '🏆  RECORDES', x: W / 2 - 170, y: 364, w: 340, h: 54, color: '#c084fc' },
-                { id: 'clear', label: '🗑  LIMPAR RECORDES', x: W / 2 - 170, y: 428, w: 340, h: 54, color: '#8b5cf6' }
+                { id: 'start', label: '▶  INICIAR', x: W / 2 - 170, y: 280, w: 340, h: 50, color: '#a855f7' },
+                { id: 'records', label: '🏆  RECORDES', x: W / 2 - 170, y: 340, w: 340, h: 50, color: '#c084fc' },
+                { id: 'skins', label: '🎨  SKINS', x: W / 2 - 170, y: 400, w: 340, h: 50, color: '#ff66cc' },
+                { id: 'clear', label: '🗑  LIMPAR RECORDES', x: W / 2 - 170, y: 460, w: 340, h: 50, color: '#8b5cf6' }
             ],
             shop: [],
             records: [
                 { id: 'back', label: '← VOLTAR', x: W / 2 - 130, y: H - 80, w: 260, h: 50, color: '#ffaa00' }
+            ],
+            skins: [
+                { id: 'back', label: '← VOLTAR', x: W / 2 - 130, y: H - 70, w: 260, h: 50, color: '#ff66cc' }
             ],
             confirmClear: [
                 { id: 'yes', label: 'SIM', x: W / 2 - 200, y: H / 2 + 40, w: 170, h: 50, color: '#ff4444' },
@@ -95,7 +164,6 @@
                 { id: 'restart', label: '🔄  REINICIAR', x: W / 2 - 170, y: 350, w: 340, h: 56, color: '#ffaa00' },
                 { id: 'menu', label: '🏠  MENU', x: W / 2 - 170, y: 420, w: 340, h: 56, color: '#a855f7' }
             ],
-            // Botão pequeno de pausa no canto superior direito do HUD
             pauseButton: { id: 'pause', x: W - 90, y: 155, w: 60, h: 40, color: '#ffaa00' }
         };
 
@@ -107,6 +175,7 @@
         function clickButton(id) {
             if (id === 'start') { startGame(); return; }
             if (id === 'records') { gameState = 'records'; recordsTime = 0; return; }
+            if (id === 'skins') { gameState = 'skins'; skinsTime = 0; return; }
             if (id === 'clear') { confirmClear = true; return; }
             if (id === 'back') { gameState = 'menu'; return; }
             if (id === 'yes') { clearRecords(); records = []; confirmClear = false; return; }
@@ -376,6 +445,8 @@
         let recordsTime = 0;
         let pauseSelection = 0;
         let pauseTime = 0;
+        let skinsTime = 0;
+        let skinsSelection = 0;
 
         let keys = {};
         let score = 0;
@@ -903,11 +974,12 @@
                     return;
                 }
                 if (k === 'arrowup' || k === 'w') menuSelection = Math.max(0, menuSelection - 1);
-                if (k === 'arrowdown' || k === 's') menuSelection = Math.min(2, menuSelection + 1);
+                if (k === 'arrowdown' || k === 's') menuSelection = Math.min(3, menuSelection + 1);
                 if (k === 'enter' || k === ' ') {
                     if (menuSelection === 0) clickButton('start');
                     else if (menuSelection === 1) clickButton('records');
-                    else if (menuSelection === 2) clickButton('clear');
+                    else if (menuSelection === 2) clickButton('skins');
+                    else if (menuSelection === 3) clickButton('clear');
                 }
                 return;
             }
@@ -917,12 +989,26 @@
                 return;
             }
 
-            // ===== PAUSA =====
-            if (gameState === 'paused') {
-                if (k === 'p' || k === 'escape') {
-                    clickButton('resume');
-                    return;
+            // ===== TELA DE SKINS =====
+            if (gameState === 'skins') {
+                if (k === 'escape') { gameState = 'menu'; return; }
+                const cols = 5;
+                if (k === 'arrowleft' || k === 'a') skinsSelection = Math.max(0, skinsSelection - 1);
+                if (k === 'arrowright' || k === 'd') skinsSelection = Math.min(SKINS.length - 1, skinsSelection + 1);
+                if (k === 'arrowup' || k === 'w') skinsSelection = Math.max(0, skinsSelection - cols);
+                if (k === 'arrowdown' || k === 's') skinsSelection = Math.min(SKINS.length - 1, skinsSelection + cols);
+                if (k === 'enter' || k === ' ') {
+                    // Seleciona skin (só se desbloqueada)
+                    if (isSkinUnlocked(SKINS[skinsSelection])) {
+                        selectedSkin = skinsSelection;
+                        saveUnlocks();
+                    }
                 }
+                return;
+            }
+
+            if (gameState === 'paused') {
+                if (k === 'p' || k === 'escape') { clickButton('resume'); return; }
                 if (k === 'arrowup' || k === 'w') pauseSelection = Math.max(0, pauseSelection - 1);
                 if (k === 'arrowdown' || k === 's') pauseSelection = Math.min(2, pauseSelection + 1);
                 if (k === 'enter' || k === ' ') {
@@ -945,11 +1031,7 @@
             }
 
             if (gameState === 'playing') {
-                if (k === 'p' || k === 'escape') {
-                    gameState = 'paused';
-                    pauseSelection = 0;
-                    return;
-                }
+                if (k === 'p' || k === 'escape') { gameState = 'paused'; pauseSelection = 0; return; }
                 if (k === 'r' && !player.reloading && player.ammo < player.maxAmmo) startReload();
             } else if (gameState === 'gameOver' || gameState === 'victory') {
                 if (k === 'r' || k === 'enter') startGame();
@@ -985,6 +1067,31 @@
                         if (mouseOverButton(btn)) { clickButton(btn.id); return; }
                     }
                 }
+                else if (gameState === 'skins') {
+                    // Botão voltar
+                    for (const btn of BUTTONS.skins) {
+                        if (mouseOverButton(btn)) { clickButton(btn.id); return; }
+                    }
+                    // Cards de skin
+                    const cardW = 130, cardH = 130;
+                    const cols = 5, gapX = 20, gapY = 40;
+                    const gridW = cols * cardW + (cols - 1) * gapX;
+                    const startX = W / 2 - gridW / 2;
+                    const startY = 230;
+                    for (let i = 0; i < SKINS.length; i++) {
+                        const col = i % cols, row = Math.floor(i / cols);
+                        const cx = startX + col * (cardW + gapX);
+                        const cy = startY + row * (cardH + gapY);
+                        if (mouse.x >= cx && mouse.x <= cx + cardW && mouse.y >= cy && mouse.y <= cy + cardH) {
+                            skinsSelection = i;
+                            if (isSkinUnlocked(SKINS[i])) {
+                                selectedSkin = i;
+                                saveUnlocks();
+                            }
+                            return;
+                        }
+                    }
+                }
                 else if (gameState === 'paused') {
                     for (const btn of BUTTONS.pause) {
                         if (mouseOverButton(btn)) { clickButton(btn.id); return; }
@@ -1007,7 +1114,6 @@
                     openShop();
                 }
                 else if (gameState === 'playing') {
-                    // Botão pequeno de pausa no HUD
                     if (mouseOverButton(BUTTONS.pauseButton)) {
                         gameState = 'paused';
                         pauseSelection = 0;
@@ -1055,6 +1161,9 @@
             shakeTime = 0; banner = 150; bannerText = phase.name;
             allySpawnBanner = phase.allies > 0 ? 180 : 0;
 
+            // Atualiza skins desbloqueadas (chegou nessa fase = desbloqueou a skin dela)
+            updateMaxPhase(currentPhase + 1);
+
             const totalAllies = phase.allies + upgrades.extraAlly;
             if (totalAllies > 0) {
                 for (let i = 0; i < totalAllies; i++) {
@@ -1084,6 +1193,7 @@
             currentPhase++;
             if (currentPhase >= PHASES.length) {
                 if (!recordSaved) { records = addRecord(score, PHASES.length, coins, true); recordSaved = true; }
+                updateMaxPhase(10);
                 gameState = 'victory';
             } else { loadPhase(); gameState = 'playing'; }
         }
@@ -1271,6 +1381,7 @@
             if (player.hp <= 0) {
                 player.hp = 0;
                 if (!recordSaved) { records = addRecord(score, currentPhase + 1, coins, false); recordSaved = true; }
+                updateMaxPhase(currentPhase + 1);
                 gameState = 'gameOver';
             }
         }
@@ -1794,45 +1905,35 @@
 
             if (gameState === 'menu') { drawMenu(); return; }
             if (gameState === 'records') { drawRecordsScreen(); return; }
+            if (gameState === 'skins') { drawSkinsScreen(); return; }
             if (gameState === 'shop') { drawShop(); return; }
             if (gameState === 'paused') { drawPaused(); return; }
 
             ctx.save();
             if (shakeTime > 0) {
-                ctx.translate(
-                    (Math.random() - 0.5) * shakeAmount,
-                    (Math.random() - 0.5) * shakeAmount
-                );
+                ctx.translate((Math.random() - 0.5) * shakeAmount, (Math.random() - 0.5) * shakeAmount);
             }
 
             drawFloor();
-
             const theme = getTheme();
 
-            const ambientPulse = Math.sin(timeAccumulator * 1.5) * 0.3 + 0.7;
             const ambientGrad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W * 0.7);
             ambientGrad.addColorStop(0, theme.ambient);
             ambientGrad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = ambientGrad;
-            ctx.globalAlpha = ambientPulse;
             ctx.fillRect(0, 0, W, H);
-            ctx.globalAlpha = 1;
 
             decals.forEach(d => {
                 ctx.globalAlpha = d.alpha;
                 ctx.fillStyle = d.color;
-                ctx.beginPath();
-                ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
             });
             ctx.globalAlpha = 1;
 
             bloodStains.forEach(b => {
                 ctx.globalAlpha = b.alpha;
                 ctx.fillStyle = '#6a0000';
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
             });
             ctx.globalAlpha = 1;
 
@@ -1853,12 +1954,9 @@
                 const a = ex.life / ex.maxLife;
                 const grad = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, ex.radius);
                 grad.addColorStop(0, `rgba(180,100,255,${a * 0.6})`);
-                grad.addColorStop(0.6, `rgba(120,50,255,${a * 0.3})`);
                 grad.addColorStop(1, 'rgba(100,0,255,0)');
                 ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2); ctx.fill();
             });
 
             medkits.forEach(m => {
@@ -1867,15 +1965,13 @@
                 auraGrad.addColorStop(0, 'rgba(68,255,136,0.6)');
                 auraGrad.addColorStop(1, 'rgba(68,255,136,0)');
                 ctx.fillStyle = auraGrad;
-                ctx.beginPath();
-                ctx.arc(m.x, m.y, m.r + 20 + pulse * 8, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 20 + pulse * 8, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#0a3a1a';
                 ctx.fillRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
                 ctx.strokeStyle = '#44ff88';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#fff';
                 ctx.fillRect(m.x - 2, m.y - 7, 4, 14);
                 ctx.fillRect(m.x - 7, m.y - 2, 14, 4);
             });
@@ -1887,37 +1983,25 @@
                 auraGrad.addColorStop(0, 'rgba(255,80,120,0.7)');
                 auraGrad.addColorStop(1, 'rgba(255,80,120,0)');
                 ctx.fillStyle = auraGrad;
-                ctx.beginPath();
-                ctx.arc(h.x, h.y + bob, h.r + 12 + pulse * 3, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(h.x, h.y + bob, h.r + 12 + pulse * 3, 0, Math.PI * 2); ctx.fill();
                 ctx.save();
                 ctx.translate(h.x, h.y + bob);
-                ctx.scale(1 + pulse * 0.1, 1 + pulse * 0.1);
                 ctx.fillStyle = '#ff3366';
                 ctx.beginPath();
                 const s = h.r;
                 ctx.moveTo(0, s * 0.3);
                 ctx.bezierCurveTo(-s * 1.2, -s * 0.6, -s * 0.5, -s * 1.2, 0, -s * 0.5);
                 ctx.bezierCurveTo(s * 0.5, -s * 1.2, s * 1.2, -s * 0.6, 0, s * 0.3);
-                ctx.closePath();
-                ctx.fill();
+                ctx.closePath(); ctx.fill();
                 ctx.restore();
             });
 
             coinDrops.forEach(c => {
                 const pulse = Math.sin(c.animPhase) * 0.5 + 0.5;
-                ctx.fillStyle = `rgba(255,220,0,${0.3 + pulse * 0.3})`;
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.r + 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = `rgba(255,220,0,${0.7 + pulse * 0.3})`;
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = `rgba(255,220,0,${0.5 + pulse * 0.3})`;
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#ffee88';
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.r * 0.6, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.r * 0.6, 0, Math.PI * 2); ctx.fill();
             });
 
             particles.forEach(p => {
@@ -1925,32 +2009,24 @@
                 ctx.globalAlpha = a;
                 if (p.glow) { ctx.shadowBlur = 12; ctx.shadowColor = p.color; }
                 ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             });
             ctx.globalAlpha = 1;
 
             bullets.forEach(b => {
                 b.trail.forEach((t, i) => {
-                    ctx.globalAlpha = (i / b.trail.length) * (b.rail ? 0.7 : 0.4);
+                    ctx.globalAlpha = (i / b.trail.length) * 0.4;
                     ctx.fillStyle = b.color;
-                    ctx.beginPath();
-                    ctx.arc(t.x, t.y, b.r * (b.rail ? 1 : 0.7), 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.beginPath(); ctx.arc(t.x, t.y, b.r * 0.7, 0, Math.PI * 2); ctx.fill();
                 });
                 ctx.globalAlpha = 1;
                 ctx.fillStyle = b.color;
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = b.glow;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r * 0.4, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.4, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             });
 
@@ -1958,9 +2034,7 @@
                 ctx.fillStyle = b.color;
                 ctx.shadowBlur = 14;
                 ctx.shadowColor = b.glow;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             });
 
@@ -1968,9 +2042,7 @@
                 ctx.fillStyle = b.color;
                 ctx.shadowBlur = 15;
                 ctx.shadowColor = b.glow || b.color;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             });
 
@@ -1995,188 +2067,7 @@
             drawScreenFX();
             drawHUD();
             drawOverlays();
-
-            // Botão pequeno de pausa no HUD
             drawPauseButton();
-        }
-
-        /* =========================================================
-           TELA DE PAUSA
-        ========================================================= */
-        function drawPaused() {
-            // Redesenha a cena congelada ao fundo
-            ctx.save();
-            drawFloor();
-            const theme = getTheme();
-            const ambientGrad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W * 0.7);
-            ambientGrad.addColorStop(0, theme.ambient);
-            ambientGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = ambientGrad;
-            ctx.fillRect(0, 0, W, H);
-
-            // Elementos do jogo (estáticos)
-            decals.forEach(d => {
-                ctx.globalAlpha = d.alpha;
-                ctx.fillStyle = d.color;
-                ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
-            });
-            ctx.globalAlpha = 1;
-
-            drawWalls();
-
-            // Inimigos
-            enemies.forEach(e => drawEnemy(e));
-            allies.forEach(a => drawAlly(a));
-            drawPlayer();
-
-            // Itens
-            medkits.forEach(m => {
-                ctx.fillStyle = '#0a3a1a';
-                ctx.fillRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
-                ctx.strokeStyle = '#44ff88';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(m.x - 2, m.y - 7, 4, 14);
-                ctx.fillRect(m.x - 7, m.y - 2, 14, 4);
-            });
-
-            coinDrops.forEach(c => {
-                ctx.fillStyle = '#ffee88';
-                ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
-            });
-
-            ctx.restore();
-
-            // Overlay escuro
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.fillRect(0, 0, W, H);
-
-            // Linhas diagonais decorativas
-            ctx.strokeStyle = 'rgba(120,60,255,0.15)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 20; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * 60, 0);
-                ctx.lineTo(i * 60 + H, H);
-                ctx.stroke();
-            }
-
-            // Título
-            const pulse = Math.sin(pauseTime * 0.08) * 3;
-            ctx.textAlign = 'center';
-
-            ctx.fillStyle = 'rgba(120,60,255,0.5)';
-            ctx.font = 'bold 90px Arial';
-            ctx.fillText('PAUSADO', W / 2, 180 + pulse);
-
-            ctx.fillStyle = '#a855f7';
-            ctx.font = 'bold 90px Arial';
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = '#7c3aed';
-            ctx.fillText('PAUSADO', W / 2, 180 + pulse);
-            ctx.shadowBlur = 0;
-
-            ctx.strokeStyle = 'rgba(220,190,255,0.7)';
-            ctx.lineWidth = 1.5;
-            ctx.strokeText('PAUSADO', W / 2, 180 + pulse);
-
-            // Info do jogo
-            ctx.fillStyle = '#aaa';
-            ctx.font = '16px Arial';
-            ctx.fillText('FASE ' + (currentPhase + 1) + ' / ' + PHASES.length + '  •  SCORE ' + score + '  •  $ ' + coins, W / 2, 220);
-
-            // Botões
-            BUTTONS.pause.forEach((btn, i) => {
-                const isHover = pauseSelection === i;
-                const hovered = mouseOverButton(btn);
-                const active = isHover || hovered;
-
-                if (active) {
-                    ctx.shadowBlur = 25;
-                    ctx.shadowColor = btn.color;
-                }
-
-                const bgGrad = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h);
-                if (active) {
-                    bgGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
-                    bgGrad.addColorStop(1, 'rgba(255,255,255,0.05)');
-                } else {
-                    bgGrad.addColorStop(0, 'rgba(25,20,40,0.9)');
-                    bgGrad.addColorStop(1, 'rgba(15,10,25,0.95)');
-                }
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
-                ctx.shadowBlur = 0;
-
-                ctx.strokeStyle = active ? btn.color : 'rgba(80,60,120,0.6)';
-                ctx.lineWidth = active ? 3 : 1.5;
-                ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
-
-                ctx.fillStyle = active ? '#fff' : '#999';
-                ctx.font = 'bold 22px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                if (active) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = btn.color;
-                }
-                ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2 + 2);
-                ctx.shadowBlur = 0;
-                ctx.textBaseline = 'alphabetic';
-            });
-
-            // Dica
-            ctx.fillStyle = '#555';
-            ctx.font = '13px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('P ou ESC para continuar  •  ↑↓ para navegar  •  ENTER para selecionar', W / 2, H - 30);
-
-            // Crosshair
-            ctx.save();
-            ctx.translate(mouse.x, mouse.y);
-            ctx.strokeStyle = '#c084fc';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(-16, 0); ctx.lineTo(-6, 0);
-            ctx.moveTo(6, 0); ctx.lineTo(16, 0);
-            ctx.moveTo(0, -16); ctx.lineTo(0, -6);
-            ctx.moveTo(0, 6); ctx.lineTo(0, 16);
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        function drawPauseButton() {
-            const btn = BUTTONS.pauseButton;
-            const hovered = mouseOverButton(btn);
-
-            // Fundo
-            ctx.fillStyle = hovered ? 'rgba(255,170,0,0.3)' : 'rgba(0,0,0,0.7)';
-            ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
-            ctx.strokeStyle = hovered ? '#ffaa00' : 'rgba(255,170,0,0.5)';
-            ctx.lineWidth = hovered ? 2.5 : 2;
-            ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
-
-            // Ícone de pausa (duas barras)
-            ctx.fillStyle = hovered ? '#ffdd44' : '#ffaa00';
-            const barW = 7;
-            const barH = 18;
-            const centerX = btn.x + btn.w / 2;
-            const centerY = btn.y + btn.h / 2;
-
-            ctx.fillRect(centerX - barW - 3, centerY - barH / 2, barW, barH);
-            ctx.fillRect(centerX + 3, centerY - barH / 2, barW, barH);
-
-            // Texto "PAUSA" pequeno abaixo do ícone
-            if (hovered) {
-                ctx.fillStyle = '#ffdd44';
-                ctx.font = 'bold 10px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('PAUSA', centerX, btn.y + btn.h + 14);
-            }
         }
 
         function drawFloor() { ctx.drawImage(floorCanvas, 0, 0); }
@@ -2197,7 +2088,6 @@
                         playerBehind = true;
                     }
                 }
-
                 const alpha = playerBehind ? 0.35 : 1;
                 ctx.save();
                 ctx.globalAlpha = alpha;
@@ -2219,13 +2109,11 @@
 
                 const bodyGrad = ctx.createLinearGradient(w.x, w.y, w.x, w.y + w.h);
                 bodyGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
-                bodyGrad.addColorStop(0.4, 'rgba(255,255,255,0.02)');
                 bodyGrad.addColorStop(1, 'rgba(0,0,0,0.3)');
                 ctx.fillStyle = bodyGrad;
                 ctx.fillRect(w.x, w.y, w.w, w.h);
 
-                ctx.fillStyle = isBorder ? theme.borderTop :
-                    isPillar ? theme.pillarTop : theme.wallTop;
+                ctx.fillStyle = isBorder ? theme.borderTop : isPillar ? theme.pillarTop : theme.wallTop;
                 ctx.fillRect(w.x, w.y, w.w, 8);
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.fillRect(w.x, w.y, w.w, 2);
@@ -2243,7 +2131,6 @@
                     ctx.strokeRect(w.x + 3, w.y + 3, w.w - 6, w.h - 6);
 
                     ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                    ctx.lineWidth = 1;
                     if (w.h > 40) {
                         const numLines = Math.floor(w.h / 25);
                         for (let i = 1; i < numLines; i++) {
@@ -2254,33 +2141,18 @@
                             ctx.stroke();
                         }
                     }
-
-                    if (isPillar && w.w >= 50 && w.h >= 50) {
-                        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                        ctx.beginPath(); ctx.arc(w.x + 10, w.y + 14, 2.5, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(w.x + w.w - 10, w.y + 14, 2.5, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(w.x + 10, w.y + w.h - 10, 2.5, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(w.x + w.w - 10, w.y + w.h - 10, 2.5, 0, Math.PI * 2); ctx.fill();
-                        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                        ctx.beginPath(); ctx.arc(w.x + 10, w.y + 14, 1, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(w.x + w.w - 10, w.y + 14, 1, 0, Math.PI * 2); ctx.fill();
-                    }
                 }
-
                 ctx.restore();
             });
 
-            // Outline do player
             if (player.x >= 0) {
                 ctx.save();
                 ctx.globalAlpha = 0.9;
-                ctx.strokeStyle = '#00ddff';
+                ctx.strokeStyle = getCurrentSkin().accent;
                 ctx.lineWidth = 2.5;
                 ctx.shadowBlur = 15;
-                ctx.shadowColor = '#00aaff';
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.r + 3, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.shadowColor = getCurrentSkin().accent;
+                ctx.beginPath(); ctx.arc(player.x, player.y, player.r + 3, 0, Math.PI * 2); ctx.stroke();
                 ctx.shadowBlur = 0;
                 ctx.restore();
             }
@@ -2290,34 +2162,26 @@
             ctx.save();
             ctx.translate(e.x, e.y);
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.beginPath();
-            ctx.ellipse(3, 5, e.r + 3, e.r * 0.7, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(3, 5, e.r + 3, e.r * 0.7, 0, 0, Math.PI * 2); ctx.fill();
 
-            const pulse = Math.sin(e.animPhase * 0.5) * 0.3 + 0.7;
-            const auraR = e.r + 10 + pulse * 6;
+            const auraR = e.r + 10;
             const auraGrad = ctx.createRadialGradient(0, 0, e.r * 0.5, 0, 0, auraR);
             auraGrad.addColorStop(0, `${e.glow}cc`);
-            auraGrad.addColorStop(0.6, `${e.glow}44`);
             auraGrad.addColorStop(1, `${e.glow}00`);
             ctx.fillStyle = auraGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, auraR, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, auraR, 0, Math.PI * 2); ctx.fill();
 
             ctx.strokeStyle = e.glow;
             ctx.lineWidth = 2;
             ctx.shadowBlur = 20;
             ctx.shadowColor = e.glow;
-            ctx.beginPath();
-            ctx.arc(0, 0, e.r + 4, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, e.r + 4, 0, Math.PI * 2); ctx.stroke();
             ctx.shadowBlur = 0;
 
             ctx.rotate(e.angle);
             ctx.shadowBlur = e.hitFlash > 0 ? 25 : 15;
             ctx.shadowColor = e.glow;
-            ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : e.color;
+            ctx.fillStyle = e.hitFlash > 0 ? '#fff' : e.color;
             ctx.beginPath();
             if (e.type === 'shotgun') {
                 for (let k = 0; k < 6; k++) {
@@ -2335,34 +2199,10 @@
             }
             ctx.shadowBlur = 0;
 
-            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, e.r * 0.7, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(e.r - 3, -3, 14, 6);
-            ctx.fillStyle = '#2a2a2a';
-            ctx.fillRect(e.r + 8, -2, 6, 4);
-
             ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(0, 0, e.r * 0.4, 0, Math.PI * 2);
-            ctx.fill();
-
+            ctx.beginPath(); ctx.arc(0, 0, e.r * 0.4, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#ff2200';
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#ff2200';
-            ctx.beginPath();
-            ctx.arc(e.r * 0.15, 0, e.r * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath();
-            ctx.arc(e.r * 0.1, -e.r * 0.1, e.r * 0.08, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(e.r * 0.15, 0, e.r * 0.18, 0, Math.PI * 2); ctx.fill();
 
             ctx.restore();
         }
@@ -2372,82 +2212,48 @@
             ctx.translate(a.x, a.y);
 
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.beginPath();
-            ctx.ellipse(3, 4, a.r + 3, a.r * 0.7, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(3, 4, a.r + 3, a.r * 0.7, 0, 0, Math.PI * 2); ctx.fill();
 
-            const pulse = Math.sin(a.animPhase * 0.6) * 0.3 + 0.7;
-            const auraR = a.r + 12 + pulse * 6;
+            const auraR = a.r + 12;
             const auraGrad = ctx.createRadialGradient(0, 0, a.r * 0.5, 0, 0, auraR);
             auraGrad.addColorStop(0, 'rgba(102,255,153,0.6)');
-            auraGrad.addColorStop(0.6, 'rgba(0,255,136,0.25)');
             auraGrad.addColorStop(1, 'rgba(0,255,136,0)');
             ctx.fillStyle = auraGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, auraR, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, auraR, 0, Math.PI * 2); ctx.fill();
 
             ctx.strokeStyle = '#00ff88';
             ctx.lineWidth = 2;
             ctx.shadowBlur = 18;
             ctx.shadowColor = '#00ff88';
-            ctx.beginPath();
-            ctx.arc(0, 0, a.r + 3, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, a.r + 3, 0, Math.PI * 2); ctx.stroke();
             ctx.shadowBlur = 0;
 
             ctx.rotate(a.angle);
-            ctx.shadowBlur = a.hitFlash > 0 ? 25 : 15;
-            ctx.shadowColor = '#00ff88';
-            ctx.fillStyle = a.hitFlash > 0 ? '#ffffff' : '#66ff99';
-            ctx.beginPath();
-            ctx.arc(0, 0, a.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            ctx.strokeStyle = 'rgba(0,60,30,0.7)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, a.r * 0.75, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.fillStyle = '#0a1a10';
-            ctx.fillRect(a.r - 3, -3, 14, 6);
-            ctx.fillStyle = '#2a5a3a';
-            ctx.fillRect(a.r + 7, -2, 6, 4);
+            ctx.fillStyle = a.hitFlash > 0 ? '#fff' : '#66ff99';
+            ctx.beginPath(); ctx.arc(0, 0, a.r, 0, Math.PI * 2); ctx.fill();
 
             ctx.fillStyle = '#0a3a1a';
-            ctx.beginPath();
-            ctx.arc(0, 0, a.r * 0.4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#aaffcc';
-            ctx.beginPath();
-            ctx.moveTo(a.r * 0.4, 0);
-            ctx.lineTo(-a.r * 0.2, -a.r * 0.3);
-            ctx.lineTo(-a.r * 0.2, a.r * 0.3);
-            ctx.closePath();
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, a.r * 0.4, 0, Math.PI * 2); ctx.fill();
 
             ctx.restore();
 
             const w = a.r * 2;
             ctx.fillStyle = 'rgba(0,0,0,0.75)';
             ctx.fillRect(a.x - a.r, a.y - a.r - 14, w, 5);
-            const hpr = a.hp / a.maxHp;
-            const grad = ctx.createLinearGradient(a.x - a.r, 0, a.x + a.r, 0);
-            grad.addColorStop(0, '#00ff88');
-            grad.addColorStop(1, '#88ffcc');
-            ctx.fillStyle = grad;
-            ctx.fillRect(a.x - a.r, a.y - a.r - 14, w * hpr, 5);
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(a.x - a.r, a.y - a.r - 14, w * (a.hp / a.maxHp), 5);
         }
 
+        /* =========================================================
+           PLAYER — usa a skin selecionada
+        ========================================================= */
         function drawPlayer() {
             const px = player.x, py = player.y;
             const r = player.r;
             const wp = getWeapon();
             const rec = player.recoil;
             const walkBob = Math.sin(player.walkPhase) * 1.5;
+            const skin = getCurrentSkin();
 
             if (healFlash > 0) {
                 const a = healFlash / 20;
@@ -2455,24 +2261,18 @@
                 healGrad.addColorStop(0, `rgba(68,255,136,${a * 0.6})`);
                 healGrad.addColorStop(1, 'rgba(68,255,136,0)');
                 ctx.fillStyle = healGrad;
-                ctx.beginPath();
-                ctx.arc(px, py, r + 45, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(px, py, r + 45, 0, Math.PI * 2); ctx.fill();
             }
 
             ctx.fillStyle = 'rgba(0,0,0,0.55)';
-            ctx.beginPath();
-            ctx.ellipse(px + 5, py + 6, r + 6, r * 0.75, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(px + 5, py + 6, r + 6, r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
 
             const auraGrad = ctx.createRadialGradient(px, py, r * 0.5, px, py, r + 25);
-            auraGrad.addColorStop(0, 'rgba(68,221,255,0.5)');
-            auraGrad.addColorStop(0.5, 'rgba(68,221,255,0.2)');
-            auraGrad.addColorStop(1, 'rgba(68,221,255,0)');
+            auraGrad.addColorStop(0, `${skin.accent}66`);
+            auraGrad.addColorStop(0.5, `${skin.accent}33`);
+            auraGrad.addColorStop(1, `${skin.accent}00`);
             ctx.fillStyle = auraGrad;
-            ctx.beginPath();
-            ctx.arc(px, py, r + 25, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(px, py, r + 25, 0, Math.PI * 2); ctx.fill();
 
             ctx.save();
             ctx.translate(px, py);
@@ -2480,11 +2280,9 @@
             if (playerInvuln > 0 && Math.floor(playerInvuln / 4) % 2 === 0) ctx.globalAlpha = 0.45;
 
             if (playerInvuln > 0) {
-                ctx.strokeStyle = `rgba(68,221,255,${0.4 + Math.sin(timeAccumulator * 12) * 0.3})`;
+                ctx.strokeStyle = `${skin.accent}99`;
                 ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, r + 6, 0, Math.PI * 2); ctx.stroke();
             }
 
             ctx.rotate(player.angle);
@@ -2492,186 +2290,119 @@
             ctx.save();
             ctx.translate(-rec * 0.8, walkBob * 0.3);
 
+            // ARMA
             if (wp.name === 'ESCOPETA') {
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 2, -6, 30, 5);
-                ctx.fillRect(r - 2, 1, 30, 5);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r - 4, -7, 6, 14);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = wp.glow;
-                ctx.fillRect(r + 26, -5, 4, 3);
-                ctx.fillRect(r + 26, 2, 4, 3);
+                ctx.fillRect(r - 2, -6, 30, 5); ctx.fillRect(r - 2, 1, 30, 5);
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r - 4, -7, 6, 14);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 12; ctx.shadowColor = wp.glow;
+                ctx.fillRect(r + 26, -5, 4, 3); ctx.fillRect(r + 26, 2, 4, 3);
                 ctx.shadowBlur = 0;
             } else if (wp.name === 'RIFLE' || wp.name === 'RAILGUN') {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 2, -4, 34, 8);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 4, -7, 12, 14);
-                ctx.fillStyle = '#0a0a0a';
-                ctx.fillRect(r + 24, -3, 12, 6);
-                ctx.fillStyle = '#444';
-                ctx.fillRect(r + 8, -9, 8, 3);
-                ctx.fillRect(r + 8, 6, 8, 3);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = wp.glow;
-                ctx.beginPath();
-                ctx.arc(r + 34, 0, 3, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(r - 2, -4, 34, 8);
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r + 4, -7, 12, 14);
+                ctx.fillStyle = '#0a0a0a'; ctx.fillRect(r + 24, -3, 12, 6);
+                ctx.fillStyle = '#444'; ctx.fillRect(r + 8, -9, 8, 3); ctx.fillRect(r + 8, 6, 8, 3);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 15; ctx.shadowColor = wp.glow;
+                ctx.beginPath(); ctx.arc(r + 34, 0, 3, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 4, 5, 6, 10);
             } else if (wp.name === 'LASER' || wp.name === 'PLASMA') {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 2, -5, 28, 10);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 4, -7, 10, 14);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 25;
-                ctx.shadowColor = wp.glow;
-                ctx.beginPath();
-                ctx.arc(r + 18, 0, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(r + 18, 0, 3, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(r - 2, -5, 28, 10);
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r + 4, -7, 10, 14);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 25; ctx.shadowColor = wp.glow;
+                ctx.beginPath(); ctx.arc(r + 18, 0, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(r + 18, 0, 3, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r + 22, -4, 8, 8);
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(r + 22, -4, 8, 8);
             } else if (wp.name === 'SMG' || wp.name === 'MINIGUN') {
                 ctx.fillStyle = '#1a1a1a';
                 ctx.fillRect(r - 2, -4, wp.name === 'MINIGUN' ? 32 : 24, 8);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 6, 2, 8, 10);
-                ctx.fillStyle = '#333';
-                ctx.fillRect(r + 12, -6, 8, 12);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = wp.glow;
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r + 6, 2, 8, 10);
+                ctx.fillStyle = '#333'; ctx.fillRect(r + 12, -6, 8, 12);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 12; ctx.shadowColor = wp.glow;
                 ctx.fillRect(r + (wp.name === 'MINIGUN' ? 28 : 20), -3, 6, 6);
                 ctx.shadowBlur = 0;
             } else if (wp.name === 'DUAL PISTOLS') {
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 2, -10, 22, 6);
-                ctx.fillRect(r - 2, 4, 22, 6);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = wp.glow;
-                ctx.fillRect(r + 18, -9, 6, 4);
-                ctx.fillRect(r + 18, 5, 6, 4);
+                ctx.fillRect(r - 2, -10, 22, 6); ctx.fillRect(r - 2, 4, 22, 6);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 12; ctx.shadowColor = wp.glow;
+                ctx.fillRect(r + 18, -9, 6, 4); ctx.fillRect(r + 18, 5, 6, 4);
                 ctx.shadowBlur = 0;
             } else if (wp.name === 'CANHÃO') {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 4, -9, 34, 18);
-                ctx.fillStyle = '#0a0a0a';
-                ctx.fillRect(r + 26, -8, 10, 16);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 6, -11, 8, 22);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 18;
-                ctx.shadowColor = wp.glow;
-                ctx.beginPath();
-                ctx.arc(r + 34, 0, 4, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(r - 4, -9, 34, 18);
+                ctx.fillStyle = '#0a0a0a'; ctx.fillRect(r + 26, -8, 10, 16);
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r + 6, -11, 8, 22);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 18; ctx.shadowColor = wp.glow;
+                ctx.beginPath(); ctx.arc(r + 34, 0, 4, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             } else {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(r - 2, -4, 22, 8);
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(r + 4, -5, 8, 10);
-                ctx.fillStyle = '#4a4a4a';
-                ctx.fillRect(r + 18, -3, 8, 6);
-                ctx.fillStyle = wp.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = wp.glow;
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(r - 2, -4, 22, 8);
+                ctx.fillStyle = '#2a2a2a'; ctx.fillRect(r + 4, -5, 8, 10);
+                ctx.fillStyle = '#4a4a4a'; ctx.fillRect(r + 18, -3, 8, 6);
+                ctx.fillStyle = wp.color; ctx.shadowBlur = 10; ctx.shadowColor = wp.glow;
                 ctx.fillRect(r + 22, -2, 4, 4);
                 ctx.shadowBlur = 0;
             }
-
             ctx.restore();
 
-            ctx.fillStyle = '#1e5f88';
+            // Braços (usa cor da skin)
+            ctx.fillStyle = skin.colorDark;
             ctx.beginPath(); ctx.arc(r * 0.5, 5, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#0a3555'; ctx.lineWidth = 1.5; ctx.stroke();
-            ctx.fillStyle = '#1e5f88';
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.fillStyle = skin.colorDark;
             ctx.beginPath(); ctx.arc(r * 0.5, -5, 5, 0, Math.PI * 2); ctx.fill();
             ctx.stroke();
 
+            // Corpo (gradiente da skin)
             const bodyGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
-            bodyGrad.addColorStop(0, '#7fe8ff');
-            bodyGrad.addColorStop(0.5, '#44ddff');
-            bodyGrad.addColorStop(1, '#1a88aa');
+            bodyGrad.addColorStop(0, skin.colorLight);
+            bodyGrad.addColorStop(0.5, skin.colorMid);
+            bodyGrad.addColorStop(1, skin.colorDark);
 
             ctx.shadowBlur = 22;
-            ctx.shadowColor = '#00aaff';
+            ctx.shadowColor = skin.accent;
             ctx.fillStyle = bodyGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
             ctx.shadowBlur = 0;
 
-            ctx.strokeStyle = '#003a5a';
+            ctx.strokeStyle = skin.colorDark;
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 
-            ctx.strokeStyle = 'rgba(0,40,80,0.6)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
             ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2); ctx.stroke();
 
+            // Núcleo (usa cor da skin)
             const coreGrad = ctx.createRadialGradient(-r * 0.15, -r * 0.15, 0, 0, 0, r * 0.5);
-            coreGrad.addColorStop(0, '#aaffff');
-            coreGrad.addColorStop(0.5, '#0088cc');
-            coreGrad.addColorStop(1, '#004466');
+            coreGrad.addColorStop(0, skin.core1);
+            coreGrad.addColorStop(0.5, skin.core2);
+            coreGrad.addColorStop(1, skin.core3);
             ctx.fillStyle = coreGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); ctx.fill();
 
-            ctx.fillStyle = '#aaffff';
+            ctx.fillStyle = skin.core1;
             ctx.beginPath();
             ctx.moveTo(r * 0.4, 0);
             ctx.lineTo(-r * 0.15, -r * 0.28);
             ctx.lineTo(-r * 0.28, 0);
             ctx.lineTo(-r * 0.15, r * 0.28);
-            ctx.closePath();
-            ctx.fill();
+            ctx.closePath(); ctx.fill();
 
             ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath();
-            ctx.arc(-r * 0.3, -r * 0.3, r * 0.2, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.3, r * 0.2, 0, Math.PI * 2); ctx.fill();
 
+            // Muzzle flash
             if (muzzleFlash > 0) {
                 const flashDist = r + 30;
-                const size = (wp.pellets > 1 ? 18 : wp.damage >= 4 ? 20 : 12) + (muzzleFlash * 2.5);
+                const size = 12 + (muzzleFlash * 2.5);
                 const grad = ctx.createRadialGradient(flashDist, 0, 0, flashDist, 0, size);
                 grad.addColorStop(0, 'rgba(255,255,220,0.98)');
                 grad.addColorStop(0.3, wp.color);
                 grad.addColorStop(0.7, 'rgba(255,150,0,0.5)');
                 grad.addColorStop(1, 'rgba(255,100,0,0)');
                 ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(flashDist, 0, size, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = 'rgba(255,240,150,0.9)';
-                ctx.beginPath();
-                for (let i = 0; i < 8; i++) {
-                    const a = (i / 8) * Math.PI * 2;
-                    const len = i % 2 === 0 ? size * 1.4 : size * 0.6;
-                    const fx = flashDist + Math.cos(a) * len;
-                    const fy = Math.sin(a) * len;
-                    if (i === 0) ctx.moveTo(fx, fy); else ctx.lineTo(fx, fy);
-                }
-                ctx.closePath();
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(flashDist, 0, size, 0, Math.PI * 2); ctx.fill();
             }
 
             ctx.restore();
@@ -2689,19 +2420,14 @@
             pl.addColorStop(0.5, 'rgba(0,0,0,0.75)');
             pl.addColorStop(1, 'rgba(0,0,0,0)');
             lctx.fillStyle = pl;
-            lctx.beginPath();
-            lctx.arc(player.x, player.y, PLAYER_LIGHT_R, 0, Math.PI * 2);
-            lctx.fill();
+            lctx.beginPath(); lctx.arc(player.x, player.y, PLAYER_LIGHT_R, 0, Math.PI * 2); lctx.fill();
 
             enemies.forEach(e => {
                 const el = lctx.createRadialGradient(e.x, e.y, 10, e.x, e.y, ENEMY_LIGHT_R);
                 el.addColorStop(0, 'rgba(0,0,0,1)');
-                el.addColorStop(0.6, 'rgba(0,0,0,0.7)');
                 el.addColorStop(1, 'rgba(0,0,0,0)');
                 lctx.fillStyle = el;
-                lctx.beginPath();
-                lctx.arc(e.x, e.y, ENEMY_LIGHT_R, 0, Math.PI * 2);
-                lctx.fill();
+                lctx.beginPath(); lctx.arc(e.x, e.y, ENEMY_LIGHT_R, 0, Math.PI * 2); lctx.fill();
             });
 
             ctx.drawImage(lightCanvas, 0, 0);
@@ -2713,9 +2439,7 @@
             ctx.translate(mx, my);
             ctx.strokeStyle = '#ff3333';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 11, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath();
             ctx.moveTo(-18, 0); ctx.lineTo(-6, 0);
             ctx.moveTo(6, 0); ctx.lineTo(18, 0);
@@ -2731,12 +2455,6 @@
             vig.addColorStop(1, 'rgba(0,0,0,0.5)');
             ctx.fillStyle = vig;
             ctx.fillRect(0, 0, W, H);
-
-            if (playerInvuln > 25) {
-                const a = (playerInvuln - 25) / 5 * 0.25;
-                ctx.fillStyle = `rgba(255,0,0,${a})`;
-                ctx.fillRect(0, 0, W, H);
-            }
         }
 
         function drawHUD() {
@@ -2769,22 +2487,16 @@
             ctx.strokeRect(barX - 6.5, ammoY - 6.5, barW + 13, 25);
 
             if (player.reloading) {
-                ctx.fillStyle = '#3a2200';
-                ctx.fillRect(barX, ammoY, barW, 14);
+                ctx.fillStyle = '#3a2200'; ctx.fillRect(barX, ammoY, barW, 14);
                 const t = 1 - player.reloadTimer / player.reloadTime;
-                ctx.fillStyle = '#ffaa00';
-                ctx.fillRect(barX, ammoY, barW * t, 14);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px Arial';
+                ctx.fillStyle = '#ffaa00'; ctx.fillRect(barX, ammoY, barW * t, 14);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial';
                 ctx.fillText('RECARREGANDO...', barX + 8, ammoY + 11);
             } else {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(barX, ammoY, barW, 14);
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(barX, ammoY, barW, 14);
                 const a = player.ammo / player.maxAmmo;
-                ctx.fillStyle = wp.color;
-                ctx.fillRect(barX, ammoY, barW * a, 14);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px Arial';
+                ctx.fillStyle = wp.color; ctx.fillRect(barX, ammoY, barW * a, 14);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial';
                 ctx.fillText(player.ammo + '/' + player.maxAmmo, barX + 8, ammoY + 11);
             }
 
@@ -2922,6 +2634,373 @@
             }
         }
 
+        function drawPauseButton() {
+            const btn = BUTTONS.pauseButton;
+            const hovered = mouseOverButton(btn);
+
+            ctx.fillStyle = hovered ? 'rgba(255,170,0,0.3)' : 'rgba(0,0,0,0.7)';
+            ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+            ctx.strokeStyle = hovered ? '#ffaa00' : 'rgba(255,170,0,0.5)';
+            ctx.lineWidth = hovered ? 2.5 : 2;
+            ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
+            ctx.fillStyle = hovered ? '#ffdd44' : '#ffaa00';
+            const barW = 7, barH = 18;
+            const centerX = btn.x + btn.w / 2;
+            const centerY = btn.y + btn.h / 2;
+            ctx.fillRect(centerX - barW - 3, centerY - barH / 2, barW, barH);
+            ctx.fillRect(centerX + 3, centerY - barH / 2, barW, barH);
+        }
+
+        /* =========================================================
+           TELA DE SKINS
+        ========================================================= */
+        function drawSkinsScreen() {
+            skinsTime++;
+
+            const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+            bgGrad.addColorStop(0, '#150520');
+            bgGrad.addColorStop(0.5, '#0a0518');
+            bgGrad.addColorStop(1, '#200520');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid de fundo
+            ctx.strokeStyle = 'rgba(255,100,200,0.04)';
+            ctx.lineWidth = 1;
+            const offset = (skinsTime * 0.5) % 60;
+            for (let x = -60; x < W + 60; x += 60) {
+                ctx.beginPath(); ctx.moveTo(x + offset, 0); ctx.lineTo(x + offset, H); ctx.stroke();
+            }
+            for (let y = -60; y < H + 60; y += 60) {
+                ctx.beginPath(); ctx.moveTo(0, y + offset); ctx.lineTo(W, y + offset); ctx.stroke();
+            }
+
+            // Brilho central
+            const glowGrad = ctx.createRadialGradient(W / 2, 80, 0, W / 2, 80, 400);
+            glowGrad.addColorStop(0, 'rgba(255,100,200,0.2)');
+            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Título
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff66cc';
+            ctx.font = 'bold 50px Arial';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff44aa';
+            ctx.fillText('🎨  SKINS', W / 2, 65);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#888';
+            ctx.font = '13px Arial';
+            ctx.fillText('Desbloqueie novas skins avançando nas fases  •  Clique para selecionar', W / 2, 92);
+
+            // Info de progresso
+            ctx.fillStyle = '#ff66cc';
+            ctx.font = 'bold 15px Arial';
+            ctx.fillText('FASE MÁXIMA ALCANÇADA: ' + maxPhaseReached + ' / 10', W / 2, 122);
+
+            // Linha
+            ctx.strokeStyle = 'rgba(255,100,200,0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(W / 2 - 350, 140);
+            ctx.lineTo(W / 2 + 350, 140);
+            ctx.stroke();
+
+            // Grid de cards
+            const cols = 5;
+            const cardW = 130, cardH = 130;
+            const gapX = 20, gapY = 40;
+            const gridW = cols * cardW + (cols - 1) * gapX;
+            const startX = W / 2 - gridW / 2;
+            const startY = 165;
+
+            for (let i = 0; i < SKINS.length; i++) {
+                const skin = SKINS[i];
+                const col = i % cols, row = Math.floor(i / cols);
+                const cx = startX + col * (cardW + gapX);
+                const cy = startY + row * (cardH + gapY);
+
+                const unlocked = isSkinUnlocked(skin);
+                const selected = selectedSkin === i;
+                const hovered = mouse.x >= cx && mouse.x <= cx + cardW &&
+                    mouse.y >= cy && mouse.y <= cy + cardH;
+                const isActive = selected || hovered || skinsSelection === i;
+
+                // Card background
+                if (unlocked) {
+                    if (isActive) {
+                        ctx.shadowBlur = 25;
+                        ctx.shadowColor = skin.accent;
+                    }
+                    ctx.fillStyle = isActive ? `${skin.accent}33` : 'rgba(30,20,40,0.8)';
+                    ctx.fillRect(cx, cy, cardW, cardH);
+                    ctx.shadowBlur = 0;
+
+                    ctx.strokeStyle = selected ? '#ffffff' : (isActive ? skin.accent : `${skin.accent}88`);
+                    ctx.lineWidth = selected ? 4 : (isActive ? 3 : 2);
+                    ctx.strokeRect(cx, cy, cardW, cardH);
+
+                    // Preview do personagem
+                    drawSkinPreview(cx + cardW / 2, cy + 60, 22, skin);
+
+                    // Nome
+                    ctx.fillStyle = isActive ? '#fff' : '#aaa';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(skin.name, cx + cardW / 2, cy + 105);
+
+                    // Status
+                    if (selected) {
+                        ctx.fillStyle = '#00ff88';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.fillText('✓ SELECIONADA', cx + cardW / 2, cy + 120);
+                    } else {
+                        ctx.fillStyle = '#666';
+                        ctx.font = '10px Arial';
+                        ctx.fillText(skin.desc, cx + cardW / 2, cy + 120);
+                    }
+                } else {
+                    // Bloqueada
+                    ctx.fillStyle = 'rgba(20,20,20,0.85)';
+                    ctx.fillRect(cx, cy, cardW, cardH);
+                    ctx.strokeStyle = isActive ? '#ff4444' : 'rgba(80,80,80,0.6)';
+                    ctx.lineWidth = isActive ? 3 : 1.5;
+                    ctx.strokeRect(cx, cy, cardW, cardH);
+
+                    // Cadeado
+                    ctx.fillStyle = 'rgba(120,120,120,0.5)';
+                    ctx.font = '40px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔒', cx + cardW / 2, cy + 65);
+
+                    // Nome oculto
+                    ctx.fillStyle = '#666';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillText('???', cx + cardW / 2, cy + 95);
+
+                    // Requisito
+                    ctx.fillStyle = '#ff5555';
+                    ctx.font = 'bold 11px Arial';
+                    ctx.fillText('FASE ' + skin.unlockPhase, cx + cardW / 2, cy + 115);
+                }
+            }
+
+            // Botão voltar
+            const btn = BUTTONS.skins[0];
+            const hoverBack = mouseOverButton(btn);
+
+            ctx.fillStyle = hoverBack ? 'rgba(255,100,200,0.35)' : 'rgba(40,20,40,0.85)';
+            ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+            ctx.strokeStyle = hoverBack ? '#ff66cc' : '#664455';
+            ctx.lineWidth = hoverBack ? 4 : 2;
+            ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
+            ctx.fillStyle = hoverBack ? '#ffaaee' : '#cc88bb';
+            ctx.font = 'bold 22px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('← VOLTAR', btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
+            ctx.textBaseline = 'alphabetic';
+
+            // Dica
+            ctx.fillStyle = '#555';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ENTER para selecionar  •  ESC para voltar  •  Setas/WASD para navegar', W / 2, H - 15);
+
+            // Crosshair
+            ctx.save();
+            ctx.translate(mouse.x, mouse.y);
+            ctx.strokeStyle = '#ff66cc';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-16, 0); ctx.lineTo(-6, 0);
+            ctx.moveTo(6, 0); ctx.lineTo(16, 0);
+            ctx.moveTo(0, -16); ctx.lineTo(0, -6);
+            ctx.moveTo(0, 6); ctx.lineTo(0, 16);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Função pra desenhar preview do personagem com uma skin específica
+        function drawSkinPreview(px, py, r, skin) {
+            ctx.save();
+            ctx.translate(px, py);
+
+            // Aura
+            const auraGrad = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r + 15);
+            auraGrad.addColorStop(0, `${skin.accent}66`);
+            auraGrad.addColorStop(1, `${skin.accent}00`);
+            ctx.fillStyle = auraGrad;
+            ctx.beginPath(); ctx.arc(0, 0, r + 15, 0, Math.PI * 2); ctx.fill();
+
+            // Corpo
+            const bodyGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+            bodyGrad.addColorStop(0, skin.colorLight);
+            bodyGrad.addColorStop(0.5, skin.colorMid);
+            bodyGrad.addColorStop(1, skin.colorDark);
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = skin.accent;
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Contorno
+            ctx.strokeStyle = skin.colorDark;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+
+            // Anel interno
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2); ctx.stroke();
+
+            // Núcleo
+            const coreGrad = ctx.createRadialGradient(-r * 0.15, -r * 0.15, 0, 0, 0, r * 0.5);
+            coreGrad.addColorStop(0, skin.core1);
+            coreGrad.addColorStop(0.5, skin.core2);
+            coreGrad.addColorStop(1, skin.core3);
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); ctx.fill();
+
+            // Seta direcional
+            ctx.fillStyle = skin.core1;
+            ctx.beginPath();
+            ctx.moveTo(r * 0.4, 0);
+            ctx.lineTo(-r * 0.15, -r * 0.28);
+            ctx.lineTo(-r * 0.28, 0);
+            ctx.lineTo(-r * 0.15, r * 0.28);
+            ctx.closePath(); ctx.fill();
+
+            // Brilho
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.3, r * 0.2, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        /* =========================================================
+           TELA DE PAUSA
+        ========================================================= */
+        function drawPaused() {
+            // Redesenha a cena congelada
+            ctx.save();
+            drawFloor();
+            const theme = getTheme();
+            const ambientGrad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W * 0.7);
+            ambientGrad.addColorStop(0, theme.ambient);
+            ambientGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = ambientGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            decals.forEach(d => {
+                ctx.globalAlpha = d.alpha;
+                ctx.fillStyle = d.color;
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            drawWalls();
+            enemies.forEach(e => drawEnemy(e));
+            allies.forEach(a => drawAlly(a));
+            drawPlayer();
+
+            medkits.forEach(m => {
+                ctx.fillStyle = '#0a3a1a';
+                ctx.fillRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
+                ctx.strokeStyle = '#44ff88';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(m.x - m.r, m.y - m.r * 0.8, m.r * 2, m.r * 1.6);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(m.x - 2, m.y - 7, 4, 14);
+                ctx.fillRect(m.x - 7, m.y - 2, 14, 4);
+            });
+
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = 'rgba(120,60,255,0.15)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath(); ctx.moveTo(i * 60, 0); ctx.lineTo(i * 60 + H, H); ctx.stroke();
+            }
+
+            const pulse = Math.sin(pauseTime * 0.08) * 3;
+            ctx.textAlign = 'center';
+
+            ctx.fillStyle = 'rgba(120,60,255,0.5)';
+            ctx.font = 'bold 90px Arial';
+            ctx.fillText('PAUSADO', W / 2, 180 + pulse);
+
+            ctx.fillStyle = '#a855f7';
+            ctx.font = 'bold 90px Arial';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#7c3aed';
+            ctx.fillText('PAUSADO', W / 2, 180 + pulse);
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(220,190,255,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeText('PAUSADO', W / 2, 180 + pulse);
+
+            ctx.fillStyle = '#aaa';
+            ctx.font = '16px Arial';
+            ctx.fillText('FASE ' + (currentPhase + 1) + ' / ' + PHASES.length + '  •  SCORE ' + score + '  •  $ ' + coins, W / 2, 220);
+
+            BUTTONS.pause.forEach((btn, i) => {
+                const isHover = pauseSelection === i;
+                const hovered = mouseOverButton(btn);
+                const active = isHover || hovered;
+
+                if (active) { ctx.shadowBlur = 25; ctx.shadowColor = btn.color; }
+
+                const bgGrad = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h);
+                bgGrad.addColorStop(0, active ? 'rgba(255,255,255,0.15)' : 'rgba(25,20,40,0.9)');
+                bgGrad.addColorStop(1, active ? 'rgba(255,255,255,0.05)' : 'rgba(15,10,25,0.95)');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+                ctx.shadowBlur = 0;
+
+                ctx.strokeStyle = active ? btn.color : 'rgba(80,60,120,0.6)';
+                ctx.lineWidth = active ? 3 : 1.5;
+                ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
+                ctx.fillStyle = active ? '#fff' : '#999';
+                ctx.font = 'bold 22px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (active) { ctx.shadowBlur = 15; ctx.shadowColor = btn.color; }
+                ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2 + 2);
+                ctx.shadowBlur = 0;
+                ctx.textBaseline = 'alphabetic';
+            });
+
+            ctx.fillStyle = '#555';
+            ctx.font = '13px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('P ou ESC para continuar  •  ↑↓ para navegar  •  ENTER para selecionar', W / 2, H - 30);
+
+            ctx.save();
+            ctx.translate(mouse.x, mouse.y);
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-16, 0); ctx.lineTo(-6, 0);
+            ctx.moveTo(6, 0); ctx.lineTo(16, 0);
+            ctx.moveTo(0, -16); ctx.lineTo(0, -6);
+            ctx.moveTo(0, 6); ctx.lineTo(0, 16);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         function drawShop() {
             ctx.fillStyle = '#0a0510';
             ctx.fillRect(0, 0, W, H);
@@ -3031,10 +3110,7 @@
 
             ctx.strokeStyle = 'rgba(255,200,50,0.4)';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(W / 2 - 300, 115);
-            ctx.lineTo(W / 2 + 300, 115);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(W / 2 - 300, 115); ctx.lineTo(W / 2 + 300, 115); ctx.stroke();
 
             if (records.length === 0) {
                 ctx.fillStyle = '#666';
@@ -3061,10 +3137,7 @@
 
                 ctx.strokeStyle = 'rgba(255,200,50,0.3)';
                 ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(tableX + 10, headerY + 10);
-                ctx.lineTo(tableX + tableW - 10, headerY + 10);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(tableX + 10, headerY + 10); ctx.lineTo(tableX + tableW - 10, headerY + 10); ctx.stroke();
 
                 records.forEach((r, i) => {
                     const rowY = headerY + 40 + i * 48;
@@ -3147,15 +3220,13 @@
 
             ctx.fillStyle = '#555';
             ctx.font = '12px Arial';
-            ctx.fillText('ESC ou ENTER para voltar ao menu  •  Clique no botão acima', W / 2, H - 15);
+            ctx.fillText('ESC ou ENTER para voltar ao menu', W / 2, H - 15);
 
             ctx.save();
             ctx.translate(mouse.x, mouse.y);
             ctx.strokeStyle = 'rgba(255,200,50,0.9)';
             ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath();
             ctx.moveTo(-16, 0); ctx.lineTo(-6, 0);
             ctx.moveTo(6, 0); ctx.lineTo(16, 0);
@@ -3180,20 +3251,14 @@
             ctx.strokeStyle = 'rgba(120,60,255,0.15)';
             ctx.lineWidth = 1;
             for (let i = -20; i <= 20; i++) {
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(i * 60, -H * 0.75);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(i * 60, -H * 0.75); ctx.stroke();
             }
             const scrollOffset = (menuTime * 2) % 60;
             for (let y = -H * 0.75; y < 200; y += 60) {
                 const depth = y + scrollOffset;
                 const scale = 1 + depth / 200;
                 ctx.globalAlpha = Math.max(0, 1 - Math.abs(depth) / (H * 0.5));
-                ctx.beginPath();
-                ctx.moveTo(-W * 1.5 * scale, y + scrollOffset);
-                ctx.lineTo(W * 1.5 * scale, y + scrollOffset);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-W * 1.5 * scale, y + scrollOffset); ctx.lineTo(W * 1.5 * scale, y + scrollOffset); ctx.stroke();
             }
             ctx.globalAlpha = 1;
             ctx.restore();
@@ -3214,17 +3279,14 @@
                 ctx.fillStyle = i % 3 === 0
                     ? `rgba(150,100,255,${alpha})`
                     : `rgba(200,150,255,${alpha})`;
-                ctx.beginPath();
-                ctx.arc(x, H - y, size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(x, H - y, size, 0, Math.PI * 2); ctx.fill();
             }
 
-            const titleY = 110;
+            const titleY = 100;
             const pulse = Math.sin(menuTime * 0.04) * 4;
 
             const glowGrad = ctx.createRadialGradient(W / 2, titleY, 0, W / 2, titleY, 350);
             glowGrad.addColorStop(0, 'rgba(120,60,255,0.3)');
-            glowGrad.addColorStop(0.5, 'rgba(80,30,200,0.1)');
             glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = glowGrad;
             ctx.fillRect(0, titleY - 200, W, 400);
@@ -3232,16 +3294,16 @@
             ctx.textAlign = 'center';
 
             ctx.fillStyle = 'rgba(80,40,200,0.7)';
-            ctx.font = 'bold 88px Arial';
-            ctx.fillText('NIGHTFALL', W / 2, titleY + pulse + 6);
+            ctx.font = 'bold 78px Arial';
+            ctx.fillText('NIGHTFALL', W / 2, titleY + pulse + 5);
 
-            const titleGrad = ctx.createLinearGradient(0, titleY - 70, 0, titleY + 25);
+            const titleGrad = ctx.createLinearGradient(0, titleY - 60, 0, titleY + 20);
             titleGrad.addColorStop(0, '#e0c8ff');
             titleGrad.addColorStop(0.4, '#a855f7');
             titleGrad.addColorStop(0.7, '#7c3aed');
             titleGrad.addColorStop(1, '#3b0764');
             ctx.fillStyle = titleGrad;
-            ctx.font = 'bold 88px Arial';
+            ctx.font = 'bold 78px Arial';
             ctx.fillText('NIGHTFALL', W / 2, titleY + pulse);
 
             ctx.strokeStyle = 'rgba(220,190,255,0.85)';
@@ -3249,21 +3311,26 @@
             ctx.strokeText('NIGHTFALL', W / 2, titleY + pulse);
 
             ctx.fillStyle = '#a855f7';
-            ctx.font = 'bold 16px Arial';
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#7c3aed';
-            ctx.fillText('T Á T I C A L   A R E N A', W / 2, titleY + 32);
-            ctx.shadowBlur = 0;
-
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('T Á T I C A L   A R E N A', W / 2, titleY + 28);
             ctx.strokeStyle = 'rgba(150,80,255,0.8)';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(W / 2 - 180, titleY + 32);
-            ctx.lineTo(W / 2 - 50, titleY + 32);
-            ctx.moveTo(W / 2 + 50, titleY + 32);
-            ctx.lineTo(W / 2 + 180, titleY + 32);
+            ctx.moveTo(W / 2 - 150, titleY + 28);
+            ctx.lineTo(W / 2 - 40, titleY + 28);
+            ctx.moveTo(W / 2 + 40, titleY + 28);
+            ctx.lineTo(W / 2 + 150, titleY + 28);
             ctx.stroke();
 
+            // Skin atual no canto
+            const skin = getCurrentSkin();
+            drawSkinPreview(80, 80, 20, skin);
+            ctx.fillStyle = skin.accent;
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(skin.name, 80, 115);
+
+            // Botões
             BUTTONS.menu.forEach((btn, i) => {
                 const isHover = menuSelection === i;
                 drawMenuButton(btn.x, btn.y, btn.w, btn.h, btn.label, isHover, btn.color);
@@ -3315,9 +3382,7 @@
             ctx.translate(mx, my);
             ctx.strokeStyle = '#c084fc';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath();
             ctx.moveTo(-16, 0); ctx.lineTo(-6, 0);
             ctx.moveTo(6, 0); ctx.lineTo(16, 0);
@@ -3331,15 +3396,12 @@
             const isHover = selected;
             accentColor = accentColor || '#a855f7';
 
-            if (isHover) {
-                ctx.shadowBlur = 25;
-                ctx.shadowColor = accentColor;
-            }
+            if (isHover) { ctx.shadowBlur = 25; ctx.shadowColor = accentColor; }
 
             const bgGrad = ctx.createLinearGradient(x, y, x + w, y + h);
             if (isHover) {
-                bgGrad.addColorStop(0, 'rgba(150,80,255,0.35)');
-                bgGrad.addColorStop(1, 'rgba(80,30,180,0.25)');
+                bgGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+                bgGrad.addColorStop(1, 'rgba(255,255,255,0.05)');
             } else {
                 bgGrad.addColorStop(0, 'rgba(25,20,40,0.85)');
                 bgGrad.addColorStop(1, 'rgba(15,10,25,0.9)');
@@ -3352,11 +3414,13 @@
             ctx.lineWidth = isHover ? 2.5 : 1.5;
             ctx.strokeRect(x, y, w, h);
 
-            ctx.fillStyle = isHover ? '#e0c8ff' : '#999';
+            ctx.fillStyle = isHover ? '#fff' : '#999';
             ctx.font = 'bold 20px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            if (isHover) { ctx.shadowBlur = 12; ctx.shadowColor = accentColor; }
             ctx.fillText(label, x + w / 2, y + h / 2 + 2);
+            ctx.shadowBlur = 0;
             ctx.textBaseline = 'alphabetic';
         }
 
